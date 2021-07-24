@@ -1,0 +1,14 @@
+<ui-section>
+    <div slot="header">编译模板</div>
+    <div class="layout horizontal center ">
+        <div class="label">编译目录:&nbsp;&nbsp;&nbsp;</div>
+        <ui-input v-value="buildRoot" style="width: 100;"></ui-input>
+        <ui-select v-value="selectBuildDir" class="flex-1">
+            <option v-for="(index, item) in buildDirs" :value="index">{{item}} </option>
+        </ui-select>
+    </div>
+    <br>
+    <ui-button class="blue large " v-on:click="exportBuildTemplate">导出到模板目录</ui-button>
+
+
+</ui-section>

@@ -1,0 +1,24 @@
+{
+  "name": "cocos-tools",
+  "version": "0.0.1",
+  "description": "The package template for getting started.",
+  "author": "piggy",
+  "main": "main.js",
+  "main-menu": {
+    "i18n:MAIN_MENU.package.title/cocos-tools": {
+      "message": "cocos-tools:open"
+    }
+  },
+  "panel": {
+    "main": "panel/index.js",
+    "type": "dockable",
+    "title": "cocos-tools",
+    "width": 400,
+    "height": 300
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.12",
+    "fs-extra": "^10.0.0",
+    "path": "^0.12.7"
+  }
+}
