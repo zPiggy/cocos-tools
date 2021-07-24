@@ -8,14 +8,16 @@ module.exports = {
     /**获取包信息
      * @returns {typeof package} */
     getPackageInfo() { return package },
-    error(error) {
-        Editor.error(`${packageName}::`, error);
+    error() {
+        Editor.error.apply(Editor, [`${packageName}::`, ...arguments]);
     },
-    warn(error) {
-        Editor.warn(`${packageName}::`, error);
+    warn() {
+        // Editor.warn(`${packageName}::`, error);
+        Editor.warn.apply(Editor, [`${packageName}::`, ...arguments]);
     },
-    log(error) {
-        Editor.log(`${packageName}::`, error);
+    log() {
+        // Editor.log(`${packageName}::`, error);
+        Editor.log.apply(Editor, [`${packageName}::`, ...arguments]);
     },
     /**
      * 递归读取目录 返回绝对路径

@@ -4,20 +4,22 @@ const Utils = require("../core/Utils");
 
 const package = Utils.getPackageInfo();
 const packageName = package.name;
+const panelName = package["panel.02"].name;
+
 const projectRoot = Editor.Project.path;  // 绝对路径
 const projectName = Editor.Project.name;
 const buildTemplateRoot = Path.join(projectRoot, "build-templates");
 
 Editor.Panel.extend({
-  style: FsExtra.readFileSync(Editor.url(`packages://${packageName}/panel/index.css`), "utf-8")
+  style: FsExtra.readFileSync(Editor.url(`packages://${packageName}/index.css`), "utf-8")
   ,
-  template: FsExtra.readFileSync(Editor.url(`packages://${packageName}/panel/index.html`), "utf-8")
+  template: FsExtra.readFileSync(Editor.url(`packages://${packageName}/${panelName}/index.html`), "utf-8")
   ,
 
 
 
   ready() {
-    let panel = new window.Vue({
+    new window.Vue({
       el: this.shadowRoot,
       data: {
         // 编译模板功能 数据定义
@@ -31,21 +33,18 @@ Editor.Panel.extend({
       },
 
       init() {
-        // Editor.log("面板初始化")
       },
 
       created() {
-        // Editor.log("面板创建")
-        this.buildDirs = this.getBuildDirs();
-
-      },
-
-      destroyed() {
-        // 用不到
+        this.initBuildRoot();
       },
 
 
       methods: {
+        initBuildRoot() {
+          this.buildDirs = this.getBuildDirs();
+          this.selectBuildDir = 0;    // 默认选中 0
+        },
         /**获取编译目录 */
         getBuildDirs() {
           let dirs = [];
@@ -66,7 +65,7 @@ Editor.Panel.extend({
           return dirs;
         },
         /**根据编译模板导出从build目录导出最新文件到模板目录(仅文件同名覆盖) */
-        exportBuildTemplate() {
+        onExportClicked() {
           try {
             let buildName = this.buildDirs[this.selectBuildDir];
             // 校验编译目录是否存在
@@ -104,13 +103,14 @@ Editor.Panel.extend({
           }
         },
 
+        onBuildRootConfirm() {
+          this.initBuildRoot();
+        }
 
 
       }
     });
   },
-
-
 
   messages: {
 

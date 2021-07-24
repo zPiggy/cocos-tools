@@ -5,14 +5,26 @@
   "author": "piggy",
   "main": "main.js",
   "main-menu": {
-    "i18n:MAIN_MENU.package.title/cocos-tools": {
-      "message": "cocos-tools:open"
+    "i18n:MAIN_MENU.package.title/cocos-tools/build-template": {
+      "message": "cocos-tools:build-template-tools"
+    },
+    "i18n:MAIN_MENU.package.title/cocos-tools/hot-update": {
+      "message": "cocos-tools:hot-update"
     }
   },
-  "panel": {
-    "main": "panel/index.js",
+  "panel.02": {
+    "name": "build-template-tools",
+    "main": "build-template-tools/index.js",
     "type": "dockable",
-    "title": "cocos-tools",
+    "title": "编译模板拷贝工具",
+    "width": 400,
+    "height": 300
+  },
+  "panel.03": {
+    "name": "hot-update",
+    "main": "hot-update/index.js",
+    "type": "dockable",
+    "title": "热更工具",
     "width": 400,
     "height": 300
   },
