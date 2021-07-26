@@ -5,6 +5,9 @@ const packageName = package.name;
 
 /**@type {{path:string,id:string,name:string}} */
 const projectInfo = Editor.Project;
+/**http地址头部匹配 */
+const HTTP_TEST = new RegExp(/^https?:\/\//);
+const UNIT_BYTE = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
 module.exports = {
     getProjectInfo() {
@@ -86,9 +89,9 @@ module.exports = {
 
         let files = FsExtra.readdirSync(dir);
         files.forEach((file) => {
-            var curPath = path.join(dir, file);
+            var curPath = Path.join(dir, file);
             if (FsExtra.statSync(curPath).isDirectory()) { // 递归
-                this._rmdirSync(curPath, true);
+                this.rmdirsSync(curPath, true);
             } else { // 删除文件
                 FsExtra.unlinkSync(curPath);
             }
@@ -100,8 +103,63 @@ module.exports = {
     },
 
     clearDir(dir) {
-        this._rmdirSync(dir);
-    }
+        this.rmdirsSync(dir);
+    },
 
 
+    /**
+     * 转为项目相对路径
+     * @param {string} url 绝对路径
+     * @returns 
+     */
+    relativeProject(url) {
+        return Path.relative(this.getProjectInfo().path, url);
+    },
+
+    /**
+     * 项目相对路径转绝对路径
+     * @param {string} url 
+     */
+    absolutePath(url) {
+        if (url.startsWith('/')) {
+            return url;
+        }
+        return Path.join(this.getProjectInfo().path, url);
+    },
+
+    /**
+     * 
+     * @param {string} httpUrl 
+     * @param  {string[]} args 
+     */
+    httpUrlJoin(httpUrl, ...args) {
+        // 取出 https?:// 头部
+        let result = HTTP_TEST.exec(httpUrl);
+        if (!result) {
+            throw new Error("不是一个完整的网络地址 " + httpUrl);
+        }
+        let http = result[0];
+        let host = httpUrl.replace(http, "");
+        args.unshift(host);
+        let newUrl = Path.join.apply(Path, args);
+        return http + newUrl;
+    },
+
+    byteConvert(bytes) {
+        var unit = UNIT_BYTE;
+        if (!bytes || isNaN(bytes)) {
+            return "0 " + unit[0];
+        }
+        var exp = Math.floor(Math.log(bytes) / Math.log(2));
+        if (exp < 1) {
+            exp = 0;
+        }
+        var i = Math.floor(exp / 10);
+        bytes = bytes / Math.pow(2, 10 * i);
+
+        if (bytes.toString().length > bytes.toFixed(2).toString().length) {
+            bytes = bytes.toFixed(2);
+        }
+        return bytes + ' ' + unit[i];
+    },
 }

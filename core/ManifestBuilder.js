@@ -10,8 +10,11 @@ const Crypto = require("crypto");
 
 const PROJECT_FILE_NAME = "preject.manifest";
 const VERSION_FILE_NAME = "version.manifest";
+const assetsDirName = "assets";
+const nativeDir = "native";
+const importDir = "import";
 /**需要热更的目录 */
-const manifestPaths = ["src", "jsb-adapter", "assets"];
+const manifestPaths = ["src", "jsb-adapter", assetsDirName];
 
 
 var ZIP_COMMON_DATE = new Date("2020-01-01");  // zip压缩时采用的公共文件修改时间
@@ -42,6 +45,78 @@ module.exports = {
     Manifest,
 
     /**
+     * 拷贝热更目录到指定目录
+     * @param {string} srcRootDir 绝对路径
+     * @param {string} destRootDir 绝对路径
+     * @returns 拷贝成功后的目录数组
+     */
+    copyManifestPaths(srcRootDir, destRootDir) {
+        let dirs = [];
+        try {
+            // 打印出相对路径
+            let _src = Utils.relativeProject(srcRootDir);
+            let _dest = Utils.relativeProject(destRootDir);
+            Utils.log(`.../${_src} => .../${_dest}`);
+            manifestPaths.forEach(subDir => {
+                let src = Path.join(srcRootDir, subDir);
+                if (FsExtra.existsSync(src) == false) {
+                    Utils.warn("热更目录不存在 " + src);
+                    return;
+                }
+                // 清空目标目录
+                let dest = Path.join(destRootDir, subDir);
+                FsExtra.emptyDirSync(dest);
+
+                FsExtra.copySync(src, dest);
+
+                dirs.push(dest);
+                Utils.log("拷贝目录", subDir);
+            });
+        } catch (error) {
+            Utils.error(error);
+        } finally {
+            return dirs;
+        }
+
+    },
+
+    /**
+     * 压缩目录
+     * @param {string} root
+     * @param {boolean} isZipImport 
+     * @param {boolean} isZipNative 
+     */
+    async zipDir(root, isZipImport, isZipNative) {
+        root = Path.join(root, assetsDirName);
+        if (FsExtra.existsSync(root) == false) {
+            return;
+        }
+        let ps = [];
+        if (isZipImport || isZipNative) {
+            let dirs = FsExtra.readdirSync(root);
+            dirs.forEach(dir => {
+                let fullPath = Path.join(root, dir);
+                if (FsExtra.statSync(fullPath).isDirectory()) {
+                    if (isZipImport) {
+                        let _importDir = Path.join(fullPath, importDir);
+                        Utils.log(`正在压缩: .../${Utils.relativeProject(_importDir)}`);
+                        ps.push(this._zipDir(_importDir));
+                    }
+
+                    if (isZipNative === true) {
+                        let _nativeDir = Path.join(fullPath, nativeDir);
+                        Utils.log(`正在压缩: .../${Utils.relativeProject(_nativeDir)}`);
+                        ps.push(this._zipDir(_nativeDir));
+                    }
+                }
+            });
+        }
+
+        await Promise.all(ps);
+
+    },
+
+    /**
      * 将dir变成场Manifest对象
      * @param {string} dirs 绝对路径数组
      * @param {Manifest} manifest
@@ -58,10 +133,10 @@ module.exports = {
         assets = assets || {};
         try {
             if (!FsExtra.existsSync(dir)) {
-                throw new Error(`热更目录不存在 ${url}`);
+                throw new Error(`热更目录不存在 ${dir}`);
             }
             // 读取所有文件(绝对路径)
-            let files = Utils.readDirs(url);
+            let files = Utils.readDirs(dir);
             files.forEach((file) => {
                 let stat = FsExtra.statSync(file);
                 if (stat.isFile() == false) {
@@ -72,16 +147,16 @@ module.exports = {
                 md5 = Crypto.createHash('md5').update(FsExtra.readFileSync(file, 'binary')).digest('hex');
                 compressed = Path.extname(file).toLowerCase() === '.zip';
                 // 获取相对路径
-                let relative = Path.relative(root, file);
-                relative = relative.replace(/\\/g, '/');    // 目录分隔符转成 '/'
-                relative = encodeURI(relative);
+                let relativePath = Path.relative(dir, file);
+                relativePath = relativePath.replace(/\\/g, '/');    // 目录分隔符转成 '/'
+                relativePath = encodeURI(relativePath);
 
-                assets[relative] = {
+                assets[relativePath] = {
                     'size': size,
                     'md5': md5
                 };
                 if (compressed) {
-                    assets[relative].compressed = true;
+                    assets[relativePath].compressed = true;
                 }
             })
         } catch (error) {
@@ -92,37 +167,6 @@ module.exports = {
 
     },
 
-    /**
-     * 拷贝热更目录到指定目录
-     * @param {string} srcRootDir 绝对路径
-     * @param {string} destRootDir 绝对路径
-     * @returns 拷贝成功后的目录数组
-     */
-    copyManifestPaths(srcRootDir, destRootDir) {
-        let dirs = [];
-        try {
-            manifestPaths.forEach(subDir => {
-                let src = Path.join(srcRootDir, subDir);
-                if (FsExtra.existsSync(src) == false) {
-                    Utils.warn("热更目录不存在 " + src);
-                    return;
-                }
-                // 清空目标目录
-                let dest = Path.join(destRootDir, subDir);
-                FsExtra.emptyDirSync(dest);
-                Utils.log(src + "=>" + dest);
-                FsExtra.copySync(src, dest);
-
-                dirs.push(dest);
-            })
-
-        } catch (error) {
-            Utils.error(error);
-        } finally {
-            return dirs;
-        }
-
-    },
 
     /**
      * 写入 project.manifest和version.manifest 文件到目录中
@@ -146,29 +190,33 @@ module.exports = {
 
 
 
-
-
-
-    async zipDir(fsDir) {
-        let dirName = path.basename(fsDir);
-        let dir = path.dirname(fsDir);
-        if (fs.existsSync(fsDir) == false) {
-            Editor.error("zip错误,文件或目录不存在: " + fsDir);
+    /**
+     * 
+     * @param {string} directory 
+     * @private
+     * @returns 
+     */
+    async _zipDir(directory) {
+        let dirName = Path.basename(directory);
+        if (FsExtra.existsSync(directory) == false) {
+            Utils.error("zip错误,文件或目录不存在: " + directory);
             return;
         }
         let zip = new Jszip();
         // 1.创建一级目录
         zip.file(dirName, null, { dir: true, date: ZIP_COMMON_DATE });
         // 2.开始zip压缩目录
-        this.ziped_dir(fsDir, zip.folder(dirName));
+        this._zipDir_R(directory, zip.folder(dirName));
 
-        let saveFile = path.join(dir, dirName + ".zip");
-        fs.existsSync(saveFile) && (fs.unlinkSync(saveFile));
+        let saveFile = directory + ".zip";
+        // 删除旧文件
+        FsExtra.existsSync(saveFile) && (FsExtra.unlinkSync(saveFile));
+
         let p = new Promise((resolve) => {
             zip.generateNodeStream({
                 type: "nodebuffer",
                 streamFiles: true
-            }).pipe(fs.createWriteStream(saveFile)).on("finish",
+            }).pipe(FsExtra.createWriteStream(saveFile)).on("finish",
                 function () {
                     resolve(null);
                 }.bind(this)).on("error",
@@ -176,43 +224,48 @@ module.exports = {
                         resolve(e);
                     }.bind(this));
         });
-
         let err = await p;
         if (err) {
-            Editor.error("zip失败: " + fsDir, saveFile);
+            Utils.error("zip失败: " + directory, saveFile);
             return;
         }
-        if (fs.existsSync(saveFile) == false) {
-            Editor.error("zip失败,文件不存在: " + fsDir, saveFile);
+        if (FsExtra.existsSync(saveFile) == false) {
+            Utils.error("zip失败,文件不存在: " + directory, saveFile);
             return;
         }
+        let size = FsExtra.statSync(saveFile).size;
+        size = Utils.byteConvert(size);
 
-        // 压缩成功后 移除目录
-        FsUtils.rmdirSync(fsDir);
+        Utils.success(`压缩成功: .../${Utils.relativeProject(saveFile)} ${size}`);
+
+        // 移除目录
+        Utils.rmdirsSync(directory, true);
     },
     /**
      * 
      * @param {string} dir 
      * @param {Jszip} zipInstance
+     * @private
      */
-    ziped_dir(dir, zipInstance) {
-        let files = fs.readdirSync(dir);
+    _zipDir_R(dir, zipInstance) {
+        let files = FsExtra.readdirSync(dir);
         for (let i = 0; i < files.length; i++) {
             let fileName = files[i];
-            if (fileName[0] == "." || fileName == "..") {
+            if (fileName == "." || fileName == "..") {
                 continue;
             }
-            let fullPath = path.join(dir, fileName);
-            let stat = fs.statSync(fullPath);
+            let fullPath = Path.join(dir, fileName);
+            let stat = FsExtra.statSync(fullPath);
             if (stat.isFile()) {
                 /**
                  * zip文件的MD5会计算每一个文件的最后修改时间 由于子包中的每一个文件都是在每次构建时重新生成这将导致MD5始终不一致
                  * 所以此处忽略文件的修改时间(写死一个固定的时间)
                  */
-                zipInstance.file(fileName, fs.readFileSync(fullPath), { date: ZIP_COMMON_DATE });
+                // Utils.log(fileName);
+                zipInstance.file(fileName, FsExtra.readFileSync(fullPath), { date: ZIP_COMMON_DATE });
             } else if (stat.isDirectory()) {
                 zipInstance.file(fileName, null, { dir: true, date: ZIP_COMMON_DATE });
-                this.ziped_dir(fullPath, zipInstance.folder(fileName));
+                this._zipDir_R(fullPath, zipInstance.folder(fileName));
             }
         }
     },
