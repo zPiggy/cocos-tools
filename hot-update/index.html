@@ -1,0 +1,31 @@
+<ui-section>
+    <div slot="header">主包</div>
+
+    <ui-prop name="版本号" type="string" v-value="version">
+        <ui-input class="flex-1"></ui-input>
+    </ui-prop>
+    <ui-prop name="资源地址" tooltip="热更资源根地址: ${packageUrl}/preject.mainfest  
+    追加版本号: ${packageUrl}/${version}/preject.mainfset">
+        <div class="layout horizontal flex-1">
+            <ui-input v-value="packageUrl" class="flex-1"></ui-input>
+            <ui-checkbox v-value="isPackageUrlAddVersion" style="width: 100;">追加版本号</ui-checkbox>
+        </div>
+    </ui-prop>
+    <ui-prop name="保存路径" tooltip="仅支持配置修改">
+        <div class="layout horizontal center felx-1">
+            <div class="label "> ${projectRoot}/&nbsp; </div>
+            <ui-input v-value="saveDir" disabled class="flex-1"></ui-input>
+        </div>
+    </ui-prop>
+
+    <ui-prop name="zip压缩" tooltip="仅支持配置修改">
+        <ui-checkbox v-value="isZipImport" style="width: 100;">压缩import目录</ui-checkbox>
+        &nbsp; &nbsp;
+        <ui-checkbox v-value="isZipNative" style="width: 100;">压缩native目录</ui-checkbox>
+    </ui-prop>
+
+</ui-section>
+<br>
+<div>
+    <ui-button class="green large " v-on:click="writeConfig">保存配置</ui-button>
+</div>

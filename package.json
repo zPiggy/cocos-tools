@@ -32,5 +32,9 @@
     "@types/fs-extra": "^9.0.12",
     "fs-extra": "^10.0.0",
     "path": "^0.12.7"
+  },
+  "dependencies": {
+    "@types/jszip": "^3.4.1",
+    "jszip": "^3.7.0"
   }
 }

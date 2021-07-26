@@ -1,14 +1,16 @@
 const FsExtra = require("fs-extra");
 const Path = require("path");
+const Config = require("../core/Config");
 const Utils = require("../core/Utils");
 
 const package = Utils.getPackageInfo();
 const packageName = package.name;
 const panelName = package["panel.02"].name;
 
-const projectRoot = Editor.Project.path;  // 绝对路径
-const projectName = Editor.Project.name;
+const projectRoot = Utils.getProjectInfo().path;  // 绝对路径
+const projectName = Utils.getProjectInfo().name;
 const buildTemplateRoot = Path.join(projectRoot, "build-templates");
+const DEFAULT_BUILD = "build";
 
 Editor.Panel.extend({
   style: FsExtra.readFileSync(Editor.url(`packages://${packageName}/index.css`), "utf-8")
@@ -24,7 +26,7 @@ Editor.Panel.extend({
       data: {
         // 编译模板功能 数据定义
         /**@type {string} */
-        buildRoot: "build",
+        buildRoot: "",
         /**@type {number} */
         selectBuildDir: 0,
         /**@type {string[]} */
@@ -36,6 +38,9 @@ Editor.Panel.extend({
       },
 
       created() {
+        let config = this.readConfig();
+        this.buildRoot = config.buildRoot || DEFAULT_BUILD;
+        this.selectBuildDir = config.selectBuildDir;
         this.initBuildRoot();
       },
 
@@ -43,7 +48,9 @@ Editor.Panel.extend({
       methods: {
         initBuildRoot() {
           this.buildDirs = this.getBuildDirs();
-          this.selectBuildDir = 0;    // 默认选中 0
+          if (!this.buildDirs[this.selectBuildDir]) {
+            this.selectBuildDir = 0;    // 默认选中 0
+          }
         },
         /**获取编译目录 */
         getBuildDirs() {
@@ -105,8 +112,18 @@ Editor.Panel.extend({
 
         onBuildRootConfirm() {
           this.initBuildRoot();
-        }
+        },
 
+
+        writeConfig() {
+          Config.writeConfig({
+            buildRoot: this.buildRoot,
+            selectBuildDir: this.selectBuildDir,
+          }, panelName);
+        },
+        readConfig() {
+          return Config.readConfig(panelName);
+        }
 
       }
     });
