@@ -24,14 +24,14 @@ Editor.Panel.extend({
     new window.Vue({
       el: this.shadowRoot,
       data: {
-        // 编译模板功能 数据定义
         /**@type {string} */
         buildRoot: "",
         /**@type {number} */
         selectBuildDir: 0,
         /**@type {string[]} */
         buildDirs: [],
-        // 编译模板功能 数据定义 end
+        /**编译模板目录 */
+        buildTemplateDir: "Native",
       },
 
       init() {
@@ -41,6 +41,7 @@ Editor.Panel.extend({
         let config = this.readConfig();
         this.buildRoot = config.buildRoot || DEFAULT_BUILD;
         this.selectBuildDir = config.selectBuildDir;
+        this.buildTemplateDir = config.buildTemplateDir || "Native";
         this.initBuildRoot();
       },
 
@@ -87,25 +88,26 @@ Editor.Panel.extend({
             }
 
             // 读取模板文件
-            let buildTemplatePath = Path.join(buildTemplateRoot, buildName);
+            let buildTemplatePath = Path.join(Utils.getProjectInfo().path, this.buildTemplateDir, buildName);
             if (!FsExtra.existsSync(buildTemplatePath)) {
+              Utils.log(`模板目录为空 ${Utils.relativeProject(buildTemplatePath)}`);
               return;
             }
+            Utils.log(`更新模板目录: .../${Utils.relativeProject(buildTemplatePath)}`);
             let files = Utils.readDirs(buildTemplatePath);
+            // Utils.log(files);
             // 拷贝同名文件
             files.forEach(file => {
               let srcFile = file.replace(buildTemplatePath, buildPath);
               if (FsExtra.existsSync(srcFile)) {
                 FsExtra.copyFileSync(srcFile, file);
-                // Utils.log(srcFile);
+                Utils.log(`.../${Utils.relativeProject(file)}`);
               }
               else {
-                Utils.warn(`${buildPath}目录中不存在${file.replace(buildTemplatePath + "/")}`);
+                Utils.warn(`更新失败: 源文件不存在 .../${Utils.relativeProject(srcFile)}`);
               }
-
             })
           } catch (error) {
-            // Editor.log("拷贝文件错误");
             Utils.error(error);
           }
         },
@@ -119,6 +121,7 @@ Editor.Panel.extend({
           Config.writeConfig({
             buildRoot: this.buildRoot,
             selectBuildDir: this.selectBuildDir,
+            buildTemplateDir: this.buildTemplateDir,
           }, panelName);
         },
         readConfig() {

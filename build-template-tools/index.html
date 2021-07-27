@@ -7,7 +7,11 @@
     </ui-select>
 </div>
 <br>
-<ui-button class="blue large " v-on:click="onExportClicked">导出到模板目录</ui-button>
+<div>
+    <ui-button class="blue large " v-on:click="onExportClicked">更新编译模板</ui-button>
+    <ui-input v-value="buildTemplateDir" class="flex-1"></ui-input>
+</div>
+
 <br>
 <div>
     <ui-button class="green large " v-on:click="writeConfig">保存配置</ui-button>

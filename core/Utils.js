@@ -62,6 +62,7 @@ module.exports = {
         results.forEach(file => {
             if (file === "." || file === "..") { return; }
 
+
             let url = Path.join(dir, file);
             let stat = FsExtra.statSync(url)
             // 递归目录
@@ -70,6 +71,9 @@ module.exports = {
                 this.readDirs(url, isDir, files);
             }
             else if (stat.isFile()) {
+                if (file == ".DS_Store") {
+                    return;
+                }
                 files.push(url);            // 存入文件
             }
         })
