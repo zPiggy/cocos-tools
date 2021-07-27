@@ -8,7 +8,7 @@ const Jszip = require('jszip');
 const Crypto = require("crypto");
 
 
-const PROJECT_FILE_NAME = "preject.manifest";
+const PROJECT_FILE_NAME = "project.manifest";
 const VERSION_FILE_NAME = "version.manifest";
 const assetsDirName = "assets";
 const nativeDir = "native";
@@ -175,17 +175,18 @@ module.exports = {
      */
     writeManifest(destDir, manifest) {
         // 写入 project.manifest
-        let file = Path.join(destDir, PROJECT_FILE_NAME);
-        FsExtra.writeJSONSync(file, manifest);
+        let file1 = Path.join(destDir, PROJECT_FILE_NAME);
+        FsExtra.writeJSONSync(file1, manifest);
 
         // 写入 version.manifest
         let version = JSON.parse(JSON.stringify(manifest));
         delete version.assets;
         delete version.searchPaths;
 
-        file = Path.join(destDir, VERSION_FILE_NAME);
-        FsExtra.writeJSONSync(file, version);
+        let file2 = Path.join(destDir, VERSION_FILE_NAME);
+        FsExtra.writeJSONSync(file2, version);
 
+        return [file1, file2];
     },
 
 

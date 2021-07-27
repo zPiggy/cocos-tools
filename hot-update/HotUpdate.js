@@ -1,5 +1,6 @@
 const FsExtra = require("fs-extra");
 const Path = require("path");
+const AssetDB = require("../core/AssetDB");
 const IPC = require("../core/IPC");
 const { Manifest } = require("../core/ManifestBuilder");
 const ManifestBuilder = require("../core/ManifestBuilder");
@@ -95,9 +96,15 @@ module.exports = {
         // 2.编译热更文件
         let manifest = new Manifest(version, packageUrl);
         ManifestBuilder.buildManifest(dirs, manifest);
-        // 3.写入热更清单文件
+        // 3.热更清单写入热更目录
         ManifestBuilder.writeManifest(copyDest, manifest);
-        // 4.重构 main.js
+        // 4.热更清单写入项目目录
+        let [file1, file2] = ManifestBuilder.writeManifest(AssetDB.urlToFspath("db://assets"), manifest);
+        // 刷新资源
+        AssetDB.refreshByPath(file1);
+        AssetDB.refreshByPath(file2);
+
+        // 5.重构 main.js
         this.reWriteMainJs(options);
         Utils.log(`已生成热更信息 => .../${Utils.relativeProject(copyDest)}`);
         Utils.success("==========热更编译完成==========");
@@ -115,7 +122,8 @@ module.exports = {
 
 
         return hotConfig;
-    }
+    },
+
 
 
 }

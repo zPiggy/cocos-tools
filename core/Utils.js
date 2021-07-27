@@ -39,6 +39,10 @@ module.exports = {
 
 
 
+
+
+
+
     error() {
         Editor.error.apply(Editor, [`${packageName}::`, ...arguments]);
     },
