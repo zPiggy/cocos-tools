@@ -59,7 +59,7 @@ module.exports = {
     },
 
     async build(options) {
-        if (Utils.panelIsOpen("03") == false) {
+        if (!Utils.panelIsOpen("03")) {
             return;
         }
         // MD5Cache 勾选校验

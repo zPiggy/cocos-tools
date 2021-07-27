@@ -26,7 +26,10 @@ module.exports = {
     /**界面是否打开
      * @param {string} id */
     panelIsOpen(id) {
-        return Editor.Panel.findWindow(this.getPanelID(id));
+        if (Editor.isMainProcess) {
+            return !!Editor.Panel.findWindow(this.getPanelID(id));
+        }
+        return !!Editor.remote.Panel.findWindow(this.getPanelID(id));
     },
     /**打开界面
      * @param {string} id */
