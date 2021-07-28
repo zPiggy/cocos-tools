@@ -2,6 +2,7 @@
 // CocosCreator 热更打包模块
 //
 const FsExtra = require("fs-extra");
+const Fs = require("fs");
 const Path = require("path");
 const Utils = require("./Utils");
 const Jszip = require('jszip');
@@ -53,6 +54,9 @@ module.exports = {
     copyManifestPaths(srcRootDir, destRootDir) {
         let dirs = [];
         try {
+            // 清空整个目录
+            FsExtra.emptyDirSync(destRootDir);
+
             // 打印出相对路径
             let _src = Utils.relativeProject(srcRootDir);
             let _dest = Utils.relativeProject(destRootDir);
@@ -63,10 +67,8 @@ module.exports = {
                     Utils.warn("热更目录不存在 " + src);
                     return;
                 }
-                // 清空目标目录
-                let dest = Path.join(destRootDir, subDir);
-                FsExtra.emptyDirSync(dest);
 
+                let dest = Path.join(destRootDir, subDir);
                 FsExtra.copySync(src, dest);
 
                 dirs.push(dest);
@@ -121,12 +123,49 @@ module.exports = {
      * @param {string} dirs 绝对路径数组
      * @param {Manifest} manifest
      */
-    buildManifest(dirs, manifest) {
-        manifest.assets = manifest.assets || {};
-        // 依次编译热更目录
-        dirs.forEach((dir) => {
-            this.buildDir(dir, manifest.assets);
-        });
+    buildManifest(rootDir, manifest) {
+        let assets = manifest.assets = manifest.assets || {};
+        try {
+            if (!FsExtra.existsSync(rootDir)) {
+                throw new Error(`热更目录不存在 ${rootDir}`);
+            }
+            // 读取所有文件(绝对路径)
+            let files = Utils.readDirs(rootDir);
+            files.forEach((file) => {
+                let stat = FsExtra.statSync(file);
+                if (stat.isFile() == false) {
+                    return;
+                }
+                size = stat.size;
+                // 编译 MD5
+                md5 = Crypto.createHash('md5').update(Fs.readFileSync(file, 'binary')).digest('hex');
+                compressed = Path.extname(file).toLowerCase() === '.zip';
+                // 获取相对路径
+                let relativePath = Path.relative(rootDir, file);
+                relativePath = relativePath.replace(/\\/g, '/');    // 目录分隔符转成 '/'
+                relativePath = encodeURI(relativePath);
+
+                assets[relativePath] = {
+                    'size': size,
+                    'md5': md5
+                };
+                if (compressed) {
+                    assets[relativePath].compressed = true;
+                }
+            })
+        } catch (error) {
+            Utils.error(error);
+        } finally {
+            return assets;
+        }
+
+
+
+
+        // // 依次编译热更目录
+        // dirs.forEach((dir) => {
+        //     this.buildDir(dir, manifest.assets);
+        // });
     },
 
     buildDir(dir, assets) {
@@ -144,7 +183,7 @@ module.exports = {
                 }
                 size = stat.size;
                 // 编译 MD5
-                md5 = Crypto.createHash('md5').update(FsExtra.readFileSync(file, 'binary')).digest('hex');
+                md5 = Crypto.createHash('md5').update(Fs.readFileSync(file, 'binary')).digest('hex');
                 compressed = Path.extname(file).toLowerCase() === '.zip';
                 // 获取相对路径
                 let relativePath = Path.relative(dir, file);
@@ -217,7 +256,7 @@ module.exports = {
             zip.generateNodeStream({
                 type: "nodebuffer",
                 streamFiles: true
-            }).pipe(FsExtra.createWriteStream(saveFile)).on("finish",
+            }).pipe(Fs.createWriteStream(saveFile)).on("finish",
                 function () {
                     resolve(null);
                 }.bind(this)).on("error",

@@ -95,7 +95,7 @@ module.exports = {
 
         // 2.编译热更文件
         let manifest = new Manifest(version, packageUrl);
-        ManifestBuilder.buildManifest(dirs, manifest);
+        ManifestBuilder.buildManifest(copyDest, manifest);
         // 3.热更清单写入热更目录
         ManifestBuilder.writeManifest(copyDest, manifest);
         // 4.热更清单写入项目目录
